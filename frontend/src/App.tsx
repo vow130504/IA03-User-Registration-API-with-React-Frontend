@@ -13,6 +13,9 @@ import {
   useMutation,
 } from '@tanstack/react-query';
 
+// Backend API base (configure VITE_API_BASE in frontend .env if needed)
+const API_BASE = (import.meta as any)?.env?.VITE_API_BASE || 'http://localhost:3000';
+
 // Thành phần Card chung cho form
 const AuthCard: React.FC<{
   title: string;
@@ -173,7 +176,7 @@ const SignUpPage: React.FC = () => {
 
   const mutation = useMutation({
     mutationFn: async (payload: SignUpForm) => {
-      const res = await fetch('/user/register', {
+      const res = await fetch(`${API_BASE}/user/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
