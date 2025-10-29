@@ -96,19 +96,32 @@ const LoginPage: React.FC = () => {
     handleSubmit,
     formState: { errors },
   } = useForm<LoginForm>({ mode: 'onTouched' });
-  const [message, setMessage] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const onSubmit: SubmitHandler<LoginForm> = () => {
-    setMessage(null);
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setMessage('Đăng nhập thành công! Đang chuyển hướng...');
+  const mutation = useMutation({
+    mutationFn: async (payload: LoginForm) => {
+      const res = await fetch(`${API_BASE}/user/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const text = await res.text();
+      let data: any = null;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch {}
+      if (!res.ok) {
+        const msg = (data && (data.message || data.error)) || text || 'Đăng nhập thất bại';
+        throw new Error(msg);
+      }
+      return data;
+    },
+    onSuccess: () => {
       setTimeout(() => navigate('/'), 800);
-    }, 800);
-  };
+    },
+  });
+
+  const onSubmit = (data: LoginForm) => mutation.mutate(data);
 
   return (
     <AuthCard
@@ -149,13 +162,18 @@ const LoginPage: React.FC = () => {
           errorMessage={errors.password?.message as string}
         />
         <div className="mt-6">
-          <AuthButton disabled={loading} isLoading={loading}>
+          <AuthButton disabled={mutation.isPending} isLoading={mutation.isPending}>
             Đăng nhập
           </AuthButton>
         </div>
-        {message && (
+        {mutation.isSuccess && (
           <p className="mt-4 text-green-600 text-sm text-center" role="status">
-            {message}
+            Đăng nhập thành công! Đang chuyển hướng...
+          </p>
+        )}
+        {mutation.isError && (
+          <p className="mt-4 text-red-600 text-sm text-center" role="alert">
+            {(mutation.error as Error)?.message || 'Đăng nhập thất bại'}
           </p>
         )}
       </form>

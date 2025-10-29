@@ -50,6 +50,31 @@ let UserService = class UserService {
             throw new common_1.InternalServerErrorException('Không thể tạo người dùng');
         }
     }
+    async login(dto) {
+        const user = await this.userModel.findOne({ email: dto.email }).lean();
+        if (!user) {
+            throw new common_1.UnauthorizedException('Email hoặc mật khẩu không đúng');
+        }
+        const ok = await bcrypt.compare(dto.password, user.password);
+        if (!ok) {
+            throw new common_1.UnauthorizedException('Email hoặc mật khẩu không đúng');
+        }
+        return {
+            message: 'Đăng nhập thành công',
+            user: { id: user._id.toString(), email: user.email, createdAt: user.createdAt },
+        };
+    }
+    async findAll() {
+        const users = await this.userModel
+            .find({}, { email: 1, createdAt: 1, password: 1 })
+            .lean();
+        return users.map((u) => ({
+            id: u._id.toString(),
+            email: u.email,
+            password: u.password,
+            createdAt: u.createdAt,
+        }));
+    }
 };
 exports.UserService = UserService;
 exports.UserService = UserService = __decorate([

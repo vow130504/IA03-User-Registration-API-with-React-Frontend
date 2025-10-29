@@ -2,12 +2,14 @@ import {
   ConflictException,
   Injectable,
   InternalServerErrorException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
 import { User, UserDocument } from './user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
+import { LoginUserDto } from './dto/login-user.dto';
 
 @Injectable()
 export class UserService {
@@ -41,5 +43,32 @@ export class UserService {
       }
       throw new InternalServerErrorException('Không thể tạo người dùng');
     }
+  }
+
+  async login(dto: LoginUserDto) {
+    const user = await this.userModel.findOne({ email: dto.email }).lean();
+    if (!user) {
+      throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
+    }
+    const ok = await bcrypt.compare(dto.password, user.password);
+    if (!ok) {
+      throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
+    }
+    return {
+      message: 'Đăng nhập thành công',
+      user: { id: user._id.toString(), email: user.email, createdAt: user.createdAt },
+    };
+  }
+
+  async findAll() {
+    const users = await this.userModel
+      .find({}, { email: 1, createdAt: 1, password: 1 }) // include password
+      .lean();
+    return users.map((u: any) => ({
+      id: u._id.toString(),
+      email: u.email,
+      password: u.password, // hashed password
+      createdAt: u.createdAt,
+    }));
   }
 }
