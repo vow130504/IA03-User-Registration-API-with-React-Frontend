@@ -5,12 +5,16 @@ const common_1 = require("@nestjs/common");
 const core_1 = require("@nestjs/core");
 const app_module_1 = require("./app.module");
 async function bootstrap() {
-    var _a;
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
-    const origin = ((_a = process.env.FRONTEND_ORIGIN) === null || _a === void 0 ? void 0 : _a.split(',').map((o) => o.trim())) || true;
+    const originEnv = process.env.FRONTEND_ORIGIN;
+    const origin = originEnv
+        ? originEnv.split(',').map((o) => o.trim())
+        : true;
     app.enableCors({
         origin,
         credentials: true,
+        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+        allowedHeaders: 'Content-Type, Authorization',
     });
     app.useGlobalPipes(new common_1.ValidationPipe({
         whitelist: true,
